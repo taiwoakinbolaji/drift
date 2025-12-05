@@ -130,7 +130,22 @@ aws dynamodb create-table \
   --region eu-west-2
 ```
 
-### Step 3: Deploy Infrastructure
+### Step 3: Build Lambda Deployment Package
+
+Before deploying, build the Lambda function with its dependencies:
+
+```bash
+# Run the build script
+./scripts/build_lambda.sh
+```
+
+This script will:
+- Install Python dependencies from `requirements.txt`
+- Package the Lambda function code
+- Create a deployment-ready zip file
+- Remove unnecessary files to minimize package size
+
+### Step 4: Deploy Infrastructure
 
 ```bash
 cd terraform
@@ -147,13 +162,20 @@ terraform apply
 
 Review the output and type `yes` to confirm deployment.
 
-### Step 4: Confirm Email Subscription
+### Step 5: Confirm Email Subscription
 
 After deployment, check your email inbox for an SNS subscription confirmation. Click the confirmation link to enable email notifications.
 
-### Step 5: Update Slack Webhook (if needed)
+### Step 6: Update Slack Webhook
 
-If you used a placeholder for the Slack webhook, update it now:
+**IMPORTANT**: The system deploys with a placeholder Slack webhook. Update it with your actual webhook URL:
+
+1. **Create a Slack Incoming Webhook**:
+   - Go to https://api.slack.com/messaging/webhooks
+   - Create a new webhook for your workspace
+   - Copy the webhook URL (format: `https://hooks.slack.com/services/XXX/YYY/ZZZ`)
+
+2. **Update the SSM Parameter**:
 
 ```bash
 aws ssm put-parameter \
@@ -164,7 +186,9 @@ aws ssm put-parameter \
   --region eu-west-2
 ```
 
-### Step 6: Export Baseline
+**Note**: If you skip this step, the system will still work but only send email notifications (no Slack alerts).
+
+### Step 7: Export Baseline
 
 Export the current Security Group rules as the baseline:
 

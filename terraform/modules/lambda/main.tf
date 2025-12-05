@@ -8,20 +8,20 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
   tags              = var.tags
 }
 
-# Package Lambda function code
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_file = "${path.module}/../../../lambda/drift_detector.py"
-  output_path = "${path.module}/lambda_function.zip"
+# Lambda deployment package (built by scripts/build_lambda.sh)
+# Run the build script before terraform apply to create the package with dependencies
+# The script installs requirements.txt and packages everything into a zip file
+locals {
+  lambda_package_path = "${path.module}/lambda_function.zip"
 }
 
 # Lambda Function
 resource "aws_lambda_function" "drift_detector" {
-  filename         = data.archive_file.lambda_zip.output_path
+  filename         = local.lambda_package_path
   function_name    = "${var.project_name}-drift-detector-${var.environment}"
   role             = aws_iam_role.lambda_role.arn
   handler          = "drift_detector.lambda_handler"
-  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  source_code_hash = filebase64sha256(local.lambda_package_path)
   runtime          = "python3.12"
   timeout          = var.lambda_timeout
   memory_size      = var.lambda_memory_size

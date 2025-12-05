@@ -508,17 +508,28 @@ def send_slack_notification(user_info: Dict, event_time: str,
     try:
         # Get Slack webhook URL from SSM Parameter Store
         logger.info(f"Retrieving Slack webhook from SSM: {SLACK_WEBHOOK_PARAMETER_NAME}")
-        
-        response = ssm_client.get_parameter(
-            Name=SLACK_WEBHOOK_PARAMETER_NAME,
-            WithDecryption=True
-        )
-        
-        webhook_url = response['Parameter']['Value']
-        
+
+        try:
+            response = ssm_client.get_parameter(
+                Name=SLACK_WEBHOOK_PARAMETER_NAME,
+                WithDecryption=True
+            )
+            webhook_url = response['Parameter']['Value']
+        except ClientError as e:
+            error_code = e.response.get('Error', {}).get('Code', '')
+            if error_code == 'ParameterNotFound':
+                logger.warning(f"Slack webhook parameter '{SLACK_WEBHOOK_PARAMETER_NAME}' not found - skipping Slack notification")
+                return
+            elif error_code in ['AccessDeniedException', 'UnauthorizedException']:
+                logger.warning(f"No permission to access Slack webhook parameter - skipping Slack notification")
+                return
+            else:
+                logger.error(f"Failed to retrieve Slack webhook from SSM: {str(e)}")
+                return  # Don't fail the entire Lambda for Slack issues
+
         # Skip if placeholder value
-        if 'REPLACE_WITH_YOUR_WEBHOOK_URL' in webhook_url:
-            logger.warning("Slack webhook URL is still placeholder - skipping Slack notification")
+        if not webhook_url or 'REPLACE_WITH_YOUR_WEBHOOK_URL' in webhook_url or 'https://hooks.slack.com' not in webhook_url:
+            logger.warning("Slack webhook URL is placeholder or invalid - skipping Slack notification")
             return
         
         # Format Slack message
@@ -576,13 +587,11 @@ def send_slack_notification(user_info: Dict, event_time: str,
             logger.info("Slack notification sent successfully")
         else:
             logger.error(f"Slack notification failed with status {response.status}: {response.data}")
-            
-    except ClientError as e:
-        logger.error(f"Failed to retrieve Slack webhook from SSM: {str(e)}")
-        raise
+
     except Exception as e:
+        # Don't fail the entire Lambda if Slack notification fails
         logger.error(f"Failed to send Slack notification: {str(e)}")
-        raise
+        logger.info("Continuing despite Slack notification failure...")
 
 
 def send_error_notification(error_message: str, event: Dict) -> None:

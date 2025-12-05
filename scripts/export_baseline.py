@@ -17,6 +17,7 @@ Requirements:
 import json
 import os
 import sys
+from datetime import datetime
 import boto3
 from botocore.exceptions import ClientError
 
@@ -108,9 +109,7 @@ def create_baseline_json(sg_id: str, rules: dict) -> dict:
     baseline = {
         'security_group_id': sg_id,
         'baseline_version': '1.0',
-        'created_at': boto3.utils.datetime2timestamp(
-            boto3.compat.datetime.datetime.utcnow()
-        ),
+        'created_at': datetime.utcnow().isoformat() + 'Z',
         'baseline_rules': rules,
         'description': 'Baseline Security Group rules for drift detection'
     }
