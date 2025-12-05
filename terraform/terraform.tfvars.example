@@ -1,0 +1,33 @@
+# Example Terraform variables - Copy this file to terraform.tfvars and update values
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region  = "eu-west-2"
+environment = "prod"
+
+# REQUIRED: Replace with your actual Security Group ID
+monitored_security_group_id = "sg-0123456789abcdef0"  # CHANGE THIS!
+
+# REQUIRED: Replace with your email address
+alert_email = "your-email@example.com"  # CHANGE THIS!
+
+# REQUIRED: Replace with your Slack webhook URL (or update in SSM after deployment)
+slack_webhook_url = "https://hooks.slack.com/services/YOUR/WEBHOOK/URL"  # CHANGE THIS!
+
+# CUSTOMIZE: Replace with your IP address or CIDR block for SSH baseline
+baseline_ssh_cidr = "203.0.113.0/24"  # CHANGE THIS to your office/home IP!
+
+# Enable HTTPS from anywhere in baseline (set to false if not needed)
+enable_https_baseline = true
+
+# Lambda configuration
+lambda_timeout     = 60
+lambda_memory_size = 256
+
+# CloudWatch Logs retention (days)
+enable_cloudwatch_logs_retention = 7
+
+# Optional additional tags
+tags = {
+  Owner       = "DevOps Team"
+  CostCenter  = "Engineering"
+}
